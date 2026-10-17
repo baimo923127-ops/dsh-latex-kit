@@ -34,11 +34,19 @@ Codex 那个不管 bib，latex-guard 那个要你自己装 TeX。
 
 ## 安装
 
+**尚未发布到 npm**，从 GitHub 直接装。pnpm 会锁定到具体 commit 并校验 integrity：
+
 ```sh
-dsh plugin --profile desktop add dsh-latex-kit
+dsh plugin --profile desktop add https://github.com/baimo923127-ops/dsh-latex-kit
 ```
 
-或从本地目录开发（改代码即时生效）：
+也可以把这条写进 profile 的 `package.json`：
+
+```json
+"dsh-latex-kit": "github:baimo923127-ops/dsh-latex-kit"
+```
+
+本地开发时改用 `link:` 指向源码目录，改代码即时生效：
 
 ```json
 "dsh-latex-kit": "link:/absolute/path/to/dsh-latex-kit"
