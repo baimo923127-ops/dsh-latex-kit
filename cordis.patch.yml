@@ -1,0 +1,11 @@
+# dsh-latex-kit bundle layer: mounted by `dsh plugin add`, so a profile gets
+# this row without manual cordis.patch.yml edits. A profile-level patch can
+# still disable the row by id.
+#
+# The Host half registers seven agent tools and needs no client half. All
+# runtime state (downloaded Tectonic, caches, compiled artefacts) lives under
+# $DSH_HOME/latex-kit, never inside this package.
+
+- insert:
+    - id: latex-kit
+      name: dsh-latex-kit

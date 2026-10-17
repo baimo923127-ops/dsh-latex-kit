@@ -1,0 +1,19 @@
+{
+  "id": "dsh-latex-kit",
+  "version": "0.1.0",
+  "main": "src/index.js",
+  "description": "LaTeX toolkit for DeepSeek Harness: managed-Tectonic compile pipeline, BibTeX audit, offline formula rendering.",
+  "engines": { "dsh": ">=0.2.0-rc.2" },
+  "contributes": {
+    "tools": [
+      "latex_doctor",
+      "latex_compile",
+      "latex_runtime",
+      "bib_lint",
+      "bib_fill",
+      "cite_audit",
+      "latex_render"
+    ],
+    "skills": []
+  }
+}

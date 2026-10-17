@@ -1,0 +1,26 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# build / runtime artefacts this plugin creates (root only: src/lib is source)
+/lib/
+/dist/
+*.log
+
+# downloaded toolchain (never commit a 20MB binary)
+bin/
+runtime/
+packages/
+staging/
+
+# editor / OS noise
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# local test scratch
+_t*.mjs
+_sample.*
+_arc/
+*.tmp
