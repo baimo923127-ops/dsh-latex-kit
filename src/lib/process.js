@@ -36,6 +36,9 @@ export function run(file, args, options = {}) {
         cwd: options.cwd,
         env: options.env ?? process.env,
         windowsHide: true,
+        // 超时要用 kill(-pid) 杀掉整棵进程树，而按进程组杀的前提是子进程
+        // 自成一组：不 detach 时它和本进程同组，-pid 会 ESRCH 或者误伤自己。
+        detached: process.platform !== 'win32',
         stdio: ['ignore', 'pipe', 'pipe'],
       })
     } catch (error) {

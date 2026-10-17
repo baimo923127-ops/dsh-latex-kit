@@ -19,11 +19,11 @@ import {
   auditCites,
   entryDoi,
   entryTitle,
+  existingFields,
   extractCites,
   lintBib,
   mergeRecord,
   parseBib,
-  presentFields,
   verifyFill,
 } from '../lib/bibtex.js'
 import { describeStatus, lookupEntry } from '../lib/crossref.js'
@@ -196,7 +196,8 @@ function renderFill(value) {
 function fillTargets(entries) {
   const targets = []
   for (const entry of entries) {
-    const present = presentFields(entry)
+    // 用「出现过的字段」判断是否缺失：空值字段也算存在，否则会补出重复字段
+    const present = existingFields(entry)
     const missing = FILLABLE_FIELDS.filter((name) => !present.has(name))
     if (missing.length === 0) continue
     const doi = entryDoi(entry)

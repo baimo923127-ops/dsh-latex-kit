@@ -146,14 +146,21 @@ export function parseLatexLog(rawText, options = {}) {
   if (text.length > MAX_LOG_CHARS) text = text.slice(-MAX_LOG_CHARS)
 
   const fileMarks = scanErrorFiles(text)
-  const lines = text.split(/\r?\n/)
 
   // 逐行累计偏移，才能把「第 N 行」映射回括号栈快照里的字符位置。
+  // 不能 split(/\r?\n/) 之后按 +1 累加：CRLF 日志的换行占两个字符，
+  // 那样每行会少算一个，误差逐行累积，最终位置和括号栈快照对不上，
+  // 错误就丢了文件名。这里按真实换行位置切，偏移量才和原文一致。
+  const lines = []
   const lineOffsets = []
-  let offset = 0
-  for (const line of lines) {
-    lineOffsets.push(offset)
-    offset += line.length + 1
+  let cursor = 0
+  while (cursor <= text.length) {
+    const newline = text.indexOf('\n', cursor)
+    const end = newline === -1 ? text.length : newline
+    lineOffsets.push(cursor)
+    lines.push(text.slice(cursor, end).replace(/\r$/, ''))
+    if (newline === -1) break
+    cursor = newline + 1
   }
 
   const fileAt = (lineIndex) => {

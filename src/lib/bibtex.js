@@ -487,12 +487,14 @@ function planNormalization(parsed, collisionKeys) {
     const hasComment = body.includes('%')
     const fieldsLower = entry.fields.map((f) => ({ ...f, name: f.rawName.toLowerCase() }))
     const ordered = orderFields(fieldsLower)
-    // 仅大小写不同的两个 key 一旦都压成小写就成了重复 key，所以这类保持原样
-    const keyLower = collisionKeys.has(entry.key.toLowerCase()) ? entry.key : entry.key.toLowerCase()
+    // 不改 key 的大小写：正文里的 cite 不会跟着改，而 biber 区分大小写，
+    // 压成小写等于制造「审计查得到、编译却断链」的假象。真要改得正文和 .bib
+    // 一起改，由人决定；这里只在报告里提示一句。
+    const keyLower = entry.key
     const kinds = []
 
     if (entry.rawType !== entry.type) kinds.push('type-case')
-    if (entry.key !== keyLower) kinds.push('key-case')
+    if (entry.key !== entry.key.toLowerCase()) kinds.push('key-case-hint')
     if (entry.fields.some((f) => f.rawName !== f.rawName.toLowerCase())) kinds.push('field-name-case')
     if (ordered.some((f, idx) => f !== fieldsLower[idx])) kinds.push('field-order')
 
@@ -532,8 +534,8 @@ function describeKind(kind, entry, keyLower, ordered) {
   switch (kind) {
     case 'type-case':
       return `@${entry.rawType} → @${entry.type}`
-    case 'key-case':
-      return `key "${entry.key}" → "${keyLower}"`
+    case 'key-case-hint':
+      return `key "${entry.key}" 含大写。biber 区分大小写，这个工具不会替你改——要改请把正文里的 \\cite 一起改`
     case 'field-name-case':
       return '字段名改为小写'
     case 'field-order':
@@ -626,6 +628,16 @@ export function presentFields(entry) {
   return set
 }
 
+/**
+ * 条目里出现过的所有字段名，含值为空的。
+ *
+ * 判断「还能不能再补一个字段」必须用它：presentFields 把空值当成缺失，
+ * 于是 `title = {}` 会被补成第二个 title，BibTeX 对重复字段的行为没有定义。
+ */
+export function existingFields(entry) {
+  return new Set(entry.fields.map((field) => field.name))
+}
+
 export function entryDoi(entry) {
   const field = entry.fields.find((f) => f.name === 'doi')
   if (!field) return null
@@ -654,7 +666,7 @@ export function entryTitle(entry) {
  * 红线：已有值的字段一律不碰，值再难看也不动。
  */
 export function mergeRecord(entry, record) {
-  const present = presentFields(entry)
+  const present = existingFields(entry)
   const candidates = record && record.fields ? record.fields : {}
   const added = {}
   for (const [name, value] of Object.entries(candidates)) {

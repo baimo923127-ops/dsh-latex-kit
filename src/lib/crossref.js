@@ -79,8 +79,15 @@ function firstOf(value) {
   return value
 }
 
-function yearFrom(dateParts) {
-  const parts = firstOf(dateParts)
+function yearFrom(value) {
+  // Crossref 的日期字段形状是 { 'date-parts': [[year, month, day]] }。
+  // 旧实现把这个对象直接丢给数组解析，永远拿不到年份——真实响应里
+  // issued 一定带日期，映射出来却没有 year，补出来的条目就缺年份。
+  // 两种形状都认：对象取 date-parts，数组直接用。
+  const nested = value && typeof value === 'object' && !Array.isArray(value)
+    ? value['date-parts']
+    : value
+  const parts = firstOf(nested)
   if (!Array.isArray(parts) || parts.length === 0) return undefined
   const year = Number(parts[0])
   return Number.isFinite(year) && year > 0 ? String(year) : undefined
@@ -153,7 +160,13 @@ export function titlesLookAlike(a, b) {
   if (left.size === 0 || right.size === 0) return false
   let shared = 0
   for (const token of left) if (right.has(token)) shared++
-  return shared / Math.min(left.size, right.size) >= 0.6
+
+  // 分母用较小集合时，「Deep learning for lung cancer diagnosis」和把 lung
+  // 换成 breast 的标题能拿到 0.8——足以把另一篇论文的 DOI、作者、期刊
+  // 一起补进来。补错的代价远高于少补，所以要求被查标题几乎被候选完整覆盖，
+  // 且两个集合的并集重合也够高。
+  const union = left.size + right.size - shared
+  return shared / left.size >= 0.95 && shared / union >= 0.85
 }
 
 export async function lookupByTitleCrossref({ title, entryType, signal, timeoutMs }) {
@@ -163,8 +176,16 @@ export async function lookupByTitleCrossref({ title, entryType, signal, timeoutM
   if (result.status !== 'ok') return { ok: false, source: 'crossref', status: result.status, detail: result.detail }
   const items = result.body?.message?.items
   if (!Array.isArray(items) || items.length === 0) return { ok: false, source: 'crossref', status: 'not-found' }
-  const match = items.find((item) => titlesLookAlike(title, firstOf(item.title)))
-  if (!match) return { ok: false, source: 'crossref', status: 'ambiguous', detail: `取了前 ${items.length} 条，标题都不够像` }
+  const matches = items.filter((item) => titlesLookAlike(title, firstOf(item.title)))
+  if (matches.length === 0) {
+    return { ok: false, source: 'crossref', status: 'ambiguous', detail: `取了前 ${items.length} 条，标题都不够像` }
+  }
+  // 两条以上都像，说明这个标题定位不到唯一一篇（预印本/会议版/期刊版很常见），
+  // 挑第一条就是在赌，宁可判 ambiguous 让人自己填。
+  if (matches.length > 1) {
+    return { ok: false, source: 'crossref', status: 'ambiguous', detail: `${matches.length} 条候选标题都像，无法确定是哪一篇` }
+  }
+  const match = matches[0]
   const fields = mapCrossrefWork(match, entryType)
   if (Object.keys(fields).length === 0) return { ok: false, source: 'crossref', status: 'not-found' }
   return { ok: true, source: 'crossref', status: 'ok', fields }

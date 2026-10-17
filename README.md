@@ -101,6 +101,16 @@ $DSH_HOME/latex-kit/
 - `latex_render` 只出 SVG；不支持 `\ce`/siunitx 等重宏包
 - 网速是风险：实测 43KB/s，慢网下 `latex_runtime install` 可能逼近 15 分钟超时
 
+## 开发
+
+```sh
+node --test
+```
+
+16 个回归用例，重点保护两个自写解析器：BibTeX 解析/规范化/补全合并，以及 TeX 日志的错误定位。
+改这两块之前先跑一遍——它们承担「不写坏用户文件」的责任，靠肉眼看不住。
+另外覆盖 Crossref 日期映射与标题相似度判定：这两处一放宽就会把别人的文献补进来。
+
 ## 依赖
 
 `package.json` **零新增依赖**。ZIP/TAR 解压用 `node:zlib` + 手写解析器（不依赖系统 `tar.exe`）；
