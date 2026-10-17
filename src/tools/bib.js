@@ -398,6 +398,17 @@ function renderAudit(value) {
     }
   }
 
+  const mismatches = value.caseMismatches ?? []
+  if (mismatches.length > 0) {
+    lines.push('')
+    lines.push('正文 key 与 .bib 大小写不一致（' + mismatches.length + '）：')
+    for (const item of mismatches) {
+      lines.push('  - 正文 "' + item.cited + '" ≠ .bib "' + item.entry + '"  ×' + item.count)
+      for (const location of item.locations) lines.push('      ' + location)
+    }
+    lines.push('  biber 区分大小写，这样写会编译断链；bibtex 不区分，所以这里不判为缺失。')
+  }
+
   lines.push('')
   if (value.neverCited.length === 0) {
     lines.push('从没被引用：无')
@@ -427,7 +438,7 @@ async function runAudit(args, shared) {
   } catch (error) {
     return {
       ok: false, error: fileErrorText(error), bib: shownBib, tex: args.tex ?? [],
-      totalEntries: 0, totalCited: 0, citedButMissing: [], neverCited: [],
+      totalEntries: 0, totalCited: 0, citedButMissing: [], caseMismatches: [], neverCited: [],
       notes: [], limitations: LIMITATIONS, noCiteAll: false,
     }
   }
@@ -474,6 +485,7 @@ async function runAudit(args, shared) {
     totalEntries: audit.totalEntries,
     totalCited: audit.totalCited,
     citedButMissing: audit.citedButMissing,
+    caseMismatches: audit.caseMismatches,
     neverCited: audit.neverCited,
     noCiteAll: audit.noCiteAll,
     notes,

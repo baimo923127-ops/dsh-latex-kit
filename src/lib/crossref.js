@@ -245,6 +245,13 @@ export async function lookupEntry({ doi, title, entryType, source = 'crossref', 
     attempts.push({ source: 'crossref', via: doi ? 'doi' : 'title', status: first.status, detail: first.detail })
     if (first.ok) return { ...first, attempts }
 
+    // ambiguous 是「查到了，但定位不到唯一一篇」。换一个库只是换一种赌法：
+    // Semantic Scholar 会自信地返回其中一条，等于把 Crossref 刚拦下的误配
+    // 从后门放回来。只有「这个来源根本没给出数据」才值得换来源重试。
+    if (first.status === 'ambiguous') {
+      return { ok: false, source: 'crossref', status: 'ambiguous', detail: first.detail, attempts }
+    }
+
     // Crossref 不可达/超时的时候，第二来源其实也大概率不通，但仍试一次——
     // 它通不通都不该让整个工具失败，因此这里不做任何抛错。
     const fallback = await lookupSemanticScholar({ doi, title, entryType, signal, timeoutMs })

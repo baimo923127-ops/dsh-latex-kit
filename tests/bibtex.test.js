@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 
 import {
   applyFills,
+  auditCites,
   existingFields,
   lintBib,
   mergeRecord,
@@ -74,4 +75,39 @@ test('CRLF 文件规范化后不掺 LF', () => {
   const result = lintBib(crlf)
   assert.equal(result.ok, true)
   assert.ok(!/[^\r]\n/.test(result.normalizedText), '不应出现裸 LF')
+})
+
+test('cite_audit 单独报告 key 大小写不一致', () => {
+  const result = auditCites({
+    citations: [{ key: 'smith2024', file: 'main.tex', line: 12, command: 'autocite' }],
+    entries: [{ key: 'Smith2024', type: 'article', line: 1 }],
+    noCiteAll: false,
+    warnings: [],
+  })
+  assert.equal(result.caseMismatches.length, 1)
+  assert.equal(result.caseMismatches[0].cited, 'smith2024')
+  assert.equal(result.caseMismatches[0].entry, 'Smith2024')
+  assert.equal(result.citedButMissing.length, 0, 'bibtex 语义下不算缺失')
+  assert.equal(result.neverCited.length, 0)
+})
+
+test('cite_audit 在 key 完全一致时不误报大小写', () => {
+  const result = auditCites({
+    citations: [{ key: 'Smith2024', file: 'main.tex', line: 3, command: 'cite' }],
+    entries: [{ key: 'Smith2024', type: 'article', line: 1 }],
+    noCiteAll: false,
+    warnings: [],
+  })
+  assert.equal(result.caseMismatches.length, 0)
+})
+
+test('cite_audit 对真正缺失的 key 仍然报缺失而不是大小写', () => {
+  const result = auditCites({
+    citations: [{ key: 'Nowhere2020', file: 'main.tex', line: 5, command: 'cite' }],
+    entries: [{ key: 'Smith2024', type: 'article', line: 1 }],
+    noCiteAll: false,
+    warnings: [],
+  })
+  assert.equal(result.citedButMissing.length, 1)
+  assert.equal(result.caseMismatches.length, 0)
 })

@@ -922,16 +922,27 @@ export function auditCites({ citations, entries, noCiteAll, warnings }) {
   }
 
   const citedButMissing = []
+  const caseMismatches = []
   const matchedEntries = new Set()
   for (const [key, list] of citedMap) {
     if (entryKeys.has(key)) {
       matchedEntries.add(key)
       continue
     }
-    // BibTeX 的 key 比对不区分大小写，仅大小写不同不算缺失
+    // bibtex 比对 key 不分大小写，所以仅大小写不同不算「缺失」。
+    // 但 biber 区分大小写：正文写成另一种大小写会直接断链，因此单独报一条，
+    // 既不改变缺失判定的语义，也不让 biber 用户漏掉这个问题。
     const lowerMatches = lowerToKeys.get(key.toLowerCase())
     if (lowerMatches && lowerMatches.length > 0) {
       matchedEntries.add(lowerMatches[0])
+      if (!lowerMatches.includes(key)) {
+        caseMismatches.push({
+          cited: key,
+          entry: lowerMatches[0],
+          count: list.length,
+          locations: list.slice(0, 20).map((c) => `${c.file}:${c.line} \\${c.command}`),
+        })
+      }
       continue
     }
     citedButMissing.push({
@@ -951,6 +962,7 @@ export function auditCites({ citations, entries, noCiteAll, warnings }) {
     totalEntries: entries.length,
     totalCited: citedMap.size,
     citedButMissing: citedButMissing.sort((a, b) => a.key.localeCompare(b.key)),
+    caseMismatches: caseMismatches.sort((a, b) => a.cited.localeCompare(b.cited)),
     neverCited,
     noCiteAll,
     warnings,
