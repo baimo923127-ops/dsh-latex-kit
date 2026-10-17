@@ -101,6 +101,20 @@ $DSH_HOME/latex-kit/
 - `latex_render` 只出 SVG；不支持 `\ce`/siunitx 等重宏包
 - 网速是风险：实测 43KB/s，慢网下 `latex_runtime install` 可能逼近 15 分钟超时
 
+## 验收状态
+
+开发机：Windows，DSH 0.2.0-rc.2，本机**零 LaTeX 引擎**。
+
+| 项 | 状态 | 证据 |
+|---|---|---|
+| 从 GitHub 安装 | ✅ 实测 | `pnpm add <repo url>` 解析为锁定的 commit tarball，6 秒装完 |
+| 安装包完整性 | ✅ 实测 | `files` 字段生效，`tests/` 不入包，14 个源文件齐全 |
+| 安装包能加载 | ✅ 实测 | 从安装位置 `import` → 7 把工具全部注册 |
+| 安装包能编译 | ✅ 实测 | 393 ms 编出 1 页 PDF |
+| 中文 `ctexart` | ✅ 实测 | 宋体正常、中英混排正常（首次 39 s 拉 ctex 宏包） |
+| 错误定位 | ✅ 实测 | 真实 CRLF 日志下精确到 `bad.tex:3` |
+| 《DSH 宿主内挂载启动》 | ⚠️ 部分 | 配置合成与包加载已验证；未在真实宿主进程里启动过 |
+| Linux / macOS 进程组终止 | ❌ 未验 | 无对应环境；`detached` 分支在 Windows 上不生效 |
 ## 开发
 
 ```sh
